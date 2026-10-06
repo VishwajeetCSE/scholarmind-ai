@@ -1,5 +1,4 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const fs = require('fs');
 
 const SYSTEM_INSTRUCTION = `You are "AI Study Buddy", a friendly and knowledgeable AI tutor designed to help students learn.
 
@@ -24,71 +23,169 @@ Your rules:
 13. Always stay on the topic of education and learning. Politely redirect off-topic requests.`;
 
 let genAI = null;
+let currentKey = null;
+let cachedWorkingModel = null;
 
 function getClient() {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY is not configured. Please set it in your .env file.');
+  const apiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not configured. Please set it in your environment variables.');
   }
-  if (!genAI) {
-    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  if (!genAI || currentKey !== apiKey) {
+    genAI = new GoogleGenerativeAI(apiKey);
+    currentKey = apiKey;
   }
   return genAI;
 }
 
-function getModelName() {
-  return process.env.GEMMA_MODEL || process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+/**
+ * Returns an ordered list of candidate models to try.
+ * If user set a custom valid model, try it first, followed by production Google AI models.
+ */
+function getCandidateModels() {
+  const candidates = [];
+
+  // Check user-configured model (GEMINI_MODEL or GEMMA_MODEL)
+  const envModel = (process.env.GEMINI_MODEL || process.env.GEMMA_MODEL || '').trim().replace(/^["']|["']$/g, '');
+  if (
+    envModel &&
+    !envModel.includes('your_') &&
+    !envModel.toLowerCase().includes('gemma-3') &&
+    !envModel.toLowerCase().includes('gemma-4')
+  ) {
+    candidates.push(envModel);
+  }
+
+  // Stable production models ordered by speed & availability
+  const defaults = [
+    'gemini-1.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro',
+    'gemini-2.5-flash',
+    'gemini-pro',
+  ];
+
+  for (const m of defaults) {
+    if (!candidates.includes(m)) {
+      candidates.push(m);
+    }
+  }
+
+  return candidates;
 }
 
 /**
- * Send a text chat message with conversation history.
- * @param {Array<{role: string, parts: Array<{text: string}>}>} history
- * @param {string} userMessage
- * @returns {Promise<string>} AI response text
+ * Attempt a chat query with automatic model fallback.
  */
 async function chat(history, userMessage) {
   const client = getClient();
-  const model = client.getGenerativeModel({
-    model: getModelName(),
-    systemInstruction: SYSTEM_INSTRUCTION,
-  });
+  const candidateModels = cachedWorkingModel
+    ? [cachedWorkingModel, ...getCandidateModels().filter((m) => m !== cachedWorkingModel)]
+    : getCandidateModels();
 
-  const chat = model.startChat({
-    history: history || [],
-  });
+  let lastError = null;
 
-  const result = await chat.sendMessage(userMessage);
-  const response = result.response;
-  return response.text();
+  for (const modelName of candidateModels) {
+    try {
+      console.log(`[AI Study Buddy] Attempting model: ${modelName}`);
+
+      let model;
+      try {
+        model = client.getGenerativeModel({
+          model: modelName,
+          systemInstruction: SYSTEM_INSTRUCTION,
+        });
+        const chatSession = model.startChat({ history: history || [] });
+        const result = await chatSession.sendMessage(userMessage);
+        const reply = result.response.text();
+        cachedWorkingModel = modelName;
+        console.log(`[AI Study Buddy] Success with model: ${modelName}`);
+        return reply;
+      } catch (innerErr) {
+        // If systemInstruction isn't supported on older model variants, retry without it
+        if (innerErr.message?.includes('systemInstruction') || innerErr.message?.includes('INVALID_ARGUMENT')) {
+          model = client.getGenerativeModel({ model: modelName });
+          const augmentedHistory = [
+            { role: 'user', parts: [{ text: `[System Instructions]:\n${SYSTEM_INSTRUCTION}` }] },
+            { role: 'model', parts: [{ text: 'Understood. I will act as your AI Study Buddy tutor.' }] },
+            ...(history || []),
+          ];
+          const chatSession = model.startChat({ history: augmentedHistory });
+          const result = await chatSession.sendMessage(userMessage);
+          const reply = result.response.text();
+          cachedWorkingModel = modelName;
+          console.log(`[AI Study Buddy] Success (fallback mode) with model: ${modelName}`);
+          return reply;
+        }
+        throw innerErr;
+      }
+    } catch (err) {
+      console.warn(`[AI Study Buddy] Model '${modelName}' failed:`, err.message);
+      lastError = err;
+
+      // Fast exit if it's an API key or quota error (switching model won't help)
+      if (
+        /api[ _-]?key/i.test(err.message) ||
+        err.message?.includes('API_KEY_INVALID') ||
+        err.message?.includes('RESOURCE_EXHAUSTED')
+      ) {
+        throw err;
+      }
+      // Continue to next candidate model
+    }
+  }
+
+  throw lastError || new Error('No available AI model found.');
 }
 
 /**
- * Send a message with an image attachment (multimodal).
- * @param {Array} history
- * @param {string} userMessage
- * @param {Object} imageData  { mimeType: string, data: string (base64) }
- * @returns {Promise<string>}
+ * Attempt a multimodal query with automatic model fallback.
  */
 async function chatWithImage(history, userMessage, imageData) {
   const client = getClient();
-  const model = client.getGenerativeModel({
-    model: getModelName(),
-    systemInstruction: SYSTEM_INSTRUCTION,
-  });
+  const candidateModels = cachedWorkingModel
+    ? [cachedWorkingModel, ...getCandidateModels().filter((m) => m !== cachedWorkingModel)]
+    : getCandidateModels();
 
-  const chat = model.startChat({
-    history: history || [],
-  });
+  let lastError = null;
 
-  const imagePart = {
-    inlineData: {
-      mimeType: imageData.mimeType,
-      data: imageData.data,
-    },
-  };
+  for (const modelName of candidateModels) {
+    try {
+      console.log(`[AI Study Buddy] Attempting multimodal model: ${modelName}`);
+      const model = client.getGenerativeModel({
+        model: modelName,
+        systemInstruction: SYSTEM_INSTRUCTION,
+      });
 
-  const result = await chat.sendMessage([userMessage || 'Explain this image.', imagePart]);
-  const response = result.response;
-  return response.text();
+      const chatSession = model.startChat({ history: history || [] });
+      const imagePart = {
+        inlineData: {
+          mimeType: imageData.mimeType,
+          data: imageData.data,
+        },
+      };
+
+      const result = await chatSession.sendMessage([userMessage || 'Explain this image.', imagePart]);
+      const reply = result.response.text();
+      cachedWorkingModel = modelName;
+      console.log(`[AI Study Buddy] Multimodal success with model: ${modelName}`);
+      return reply;
+    } catch (err) {
+      console.warn(`[AI Study Buddy] Multimodal model '${modelName}' failed:`, err.message);
+      lastError = err;
+
+      if (
+        /api[ _-]?key/i.test(err.message) ||
+        err.message?.includes('API_KEY_INVALID') ||
+        err.message?.includes('RESOURCE_EXHAUSTED')
+      ) {
+        throw err;
+      }
+    }
+  }
+
+  throw lastError || new Error('No available multimodal AI model found.');
 }
 
 module.exports = { chat, chatWithImage };
