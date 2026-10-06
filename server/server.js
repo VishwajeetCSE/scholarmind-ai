@@ -39,9 +39,13 @@ if (process.env.NODE_ENV === 'production') {
 // Error handler (must be last)
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🎓 AI Study Buddy server running on http://localhost:${PORT}`);
-  if (!process.env.GEMINI_API_KEY) {
-    console.warn('⚠️  GEMINI_API_KEY is not set. Create a .env file in the project root.');
-  }
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🎓 AI Study Buddy server running on http://localhost:${PORT}`);
+    if (!process.env.GEMINI_API_KEY) {
+      console.warn('⚠️  GEMINI_API_KEY is not set. Create a .env file in the project root.');
+    }
+  });
+}
+
+module.exports = app;
