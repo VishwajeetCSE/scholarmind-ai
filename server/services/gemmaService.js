@@ -36,7 +36,7 @@ function getClient() {
 }
 
 function getModelName() {
-  return process.env.GEMMA_MODEL || 'gemma-3-27b-it';
+  return process.env.GEMMA_MODEL || process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 }
 
 /**
