@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import WelcomeScreen from './components/WelcomeScreen';
@@ -9,12 +9,66 @@ import chatBg from './assets/chat-bg.png';
 
 const API_URL = '/api/chat';
 
+// Hardcoded simulation profile for test user pipeline
+const SIMULATION_USER = {
+  username: 'test_warrior',
+  role: 'Beta Tester',
+  joinDate: 'October 2026',
+};
+
 function App() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTopic, setCurrentTopic] = useState('');
   const [recentTopics, setRecentTopics] = useState([]);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'chat' | 'history'
+
+  // Persist session log to backend pipeline (commits to GitHub or local disk)
+  const persistSessionLog = (newMessages) => {
+    fetch('/api/test-user/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user: SIMULATION_USER,
+        messages: newMessages,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          console.log('[Simulation Pipeline] Sync complete via:', data.source);
+        }
+      })
+      .catch((err) => console.warn('[Simulation Pipeline] Background sync failed:', err));
+  };
+
+  // On initialization, load persisted simulation logs
+  useEffect(() => {
+    async function loadSimulationData() {
+      try {
+        const res = await fetch('/api/test-user/load');
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && Array.isArray(result.data?.messages) && result.data.messages.length > 0) {
+            console.log('[Simulation Pipeline] Loaded session logs from:', result.source);
+            setMessages(result.data.messages);
+
+            const userMsgs = result.data.messages.filter((m) => m.role === 'user' && m.text);
+            if (userMsgs.length > 0) {
+              const lastText = userMsgs[userMsgs.length - 1].text;
+              setCurrentTopic(lastText);
+              const uniqueTopics = [...new Set(userMsgs.map((m) => m.text))].slice(-8);
+              setRecentTopics(uniqueTopics);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[Simulation Pipeline] Could not load persisted data:', err);
+      }
+    }
+
+    loadSimulationData();
+  }, []);
 
   const buildHistory = (msgs) => {
     return msgs.map((m) => ({
@@ -104,7 +158,11 @@ function App() {
           text: data.reply,
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, aiMsg]);
+        setMessages((prev) => {
+          const updated = [...prev, aiMsg];
+          persistSessionLog(updated);
+          return updated;
+        });
       } catch (err) {
         const errorMsg = {
           id: Date.now() + 1,
@@ -113,7 +171,11 @@ function App() {
           timestamp: new Date(),
           isError: true,
         };
-        setMessages((prev) => [...prev, errorMsg]);
+        setMessages((prev) => {
+          const updated = [...prev, errorMsg];
+          persistSessionLog(updated);
+          return updated;
+        });
       } finally {
         setIsLoading(false);
       }
@@ -144,6 +206,7 @@ function App() {
     setMessages([]);
     setCurrentTopic('');
     setActiveTab('chat');
+    persistSessionLog([]);
   };
 
   const hasMessages = messages.length > 0;
@@ -155,6 +218,7 @@ function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onNewChat={startNewChat}
+        simulationUser={SIMULATION_USER}
       />
 
       {/* 2. Main Content Viewport */}

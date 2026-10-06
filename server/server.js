@@ -7,6 +7,7 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 const express = require('express');
 const cors = require('cors');
 const chatRouter = require('./routes/chat');
+const logsRouter = require('./routes/logs');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -23,6 +24,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // API routes
 app.use('/api/chat', chatRouter);
+app.use('/api/test-user', logsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

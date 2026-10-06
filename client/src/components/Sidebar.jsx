@@ -1,4 +1,4 @@
-function Sidebar({ activeTab, setActiveTab, onNewChat }) {
+function Sidebar({ activeTab, setActiveTab, onNewChat, simulationUser }) {
   const NAV_ITEMS = [
     {
       id: 'overview',
@@ -83,11 +83,19 @@ function Sidebar({ activeTab, setActiveTab, onNewChat }) {
       </nav>
 
       {/* User Profile at Bottom Corner */}
-      <div className="flex flex-col items-center gap-2 pt-4 border-t border-gray-100 w-full">
+      <div
+        className="flex flex-col items-center gap-1 pt-4 border-t border-gray-100 w-full"
+        title={`${simulationUser?.username || 'test_warrior'} (${simulationUser?.role || 'Beta Tester'})`}
+      >
         <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-sm">
-          SM
+          TW
         </div>
-        <span className="text-[10px] text-gray-400 font-medium">Virtual</span>
+        <span className="text-[10px] text-slate-800 font-semibold truncate max-w-[70px]">
+          {simulationUser?.username || 'test_warrior'}
+        </span>
+        <span className="text-[9px] text-blue-600 font-medium bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-100">
+          {simulationUser?.role || 'Beta Tester'}
+        </span>
       </div>
     </aside>
   );
