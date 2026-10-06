@@ -1,101 +1,214 @@
 @import "tailwindcss";
 
-/* Custom styles */
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    background-color: #080c14;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    overflow-x: hidden;
   }
 }
 
-/* Scrollbar styling */
+/* Custom Glassmorphism & Glow Utilities */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-card:hover {
+  border-color: rgba(129, 140, 248, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.12);
+}
+
+.neon-border {
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+}
+
+/* Subtle ambient background glow */
+.ambient-glow {
+  background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.08) 35%, transparent 70%);
+}
+
+/* Sleek dark scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(255, 255, 255, 0.25);
 }
 
-/* Markdown content styling */
+/* Markdown formatting in Dark Mode */
+.markdown-content {
+  color: #cbd5e1;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
 .markdown-content h1,
 .markdown-content h2,
 .markdown-content h3 {
-  @apply font-bold mt-3 mb-1;
+  color: #f8fafc;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
 }
-.markdown-content h1 { @apply text-xl; }
-.markdown-content h2 { @apply text-lg; }
-.markdown-content h3 { @apply text-base; }
+.markdown-content h1 { font-size: 1.35rem; }
+.markdown-content h2 { font-size: 1.18rem; }
+.markdown-content h3 { font-size: 1.05rem; }
 
 .markdown-content p {
-  @apply mb-2 leading-relaxed;
+  margin-bottom: 0.85rem;
+  line-height: 1.75;
 }
 
 .markdown-content ul,
 .markdown-content ol {
-  @apply ml-5 mb-2;
+  margin-left: 1.25rem;
+  margin-bottom: 0.85rem;
 }
-.markdown-content ul { @apply list-disc; }
-.markdown-content ol { @apply list-decimal; }
-.markdown-content li { @apply mb-1; }
+.markdown-content ul { list-style-type: disc; }
+.markdown-content ol { list-style-type: decimal; }
+.markdown-content li {
+  margin-bottom: 0.35rem;
+  color: #cbd5e1;
+}
 
 .markdown-content code {
-  @apply bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded text-sm font-mono;
+  background: rgba(15, 23, 42, 0.9);
+  color: #38bdf8;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.375rem;
+  font-size: 0.84rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
+
 .markdown-content pre {
-  @apply bg-slate-800 text-slate-100 p-4 rounded-lg overflow-x-auto mb-3;
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem 1.15rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 .markdown-content pre code {
-  @apply bg-transparent text-slate-100 p-0;
+  background: transparent;
+  color: #a5f3fc;
+  padding: 0;
+  border: none;
+  font-size: 0.85rem;
 }
 
 .markdown-content table {
-  @apply w-full border-collapse mb-3;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .markdown-content th,
 .markdown-content td {
-  @apply border border-slate-300 px-3 py-2 text-left text-sm;
+  padding: 0.65rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 .markdown-content th {
-  @apply bg-slate-100 font-semibold;
+  background: rgba(30, 41, 59, 0.7);
+  color: #f1f5f9;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.markdown-content tr:last-child td {
+  border-bottom: none;
+}
+.markdown-content tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .markdown-content blockquote {
-  @apply border-l-4 border-indigo-400 pl-4 italic text-slate-600 my-2;
+  border-left: 3px solid #818cf8;
+  padding-left: 1rem;
+  margin: 0.85rem 0;
+  color: #94a3b8;
+  font-style: italic;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
 }
 
 .markdown-content strong {
-  @apply font-semibold;
+  color: #f8fafc;
+  font-weight: 600;
 }
 
 .markdown-content a {
-  @apply text-indigo-600 underline;
+  color: #818cf8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.markdown-content a:hover {
+  color: #a5b4fc;
 }
 
-/* Typing animation */
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-.typing-cursor::after {
-  content: '▋';
-  animation: blink 1s step-end infinite;
-  @apply text-indigo-500;
+/* Animations */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-/* Pulse dots for loading */
-@keyframes pulse-dot {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
 }
-.loading-dot {
-  animation: pulse-dot 1.4s infinite ease-in-out both;
+.animate-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.12) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shimmer 2s infinite;
 }
-.loading-dot:nth-child(1) { animation-delay: -0.32s; }
-.loading-dot:nth-child(2) { animation-delay: -0.16s; }
-.loading-dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
