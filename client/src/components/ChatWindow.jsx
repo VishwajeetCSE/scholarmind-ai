@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import ChatMessage from './ChatMessage';
+import chatBg from '../assets/chat-bg.png';
 
 function ThinkingIndicator() {
   return (
@@ -9,8 +10,8 @@ function ThinkingIndicator() {
           🎓
         </div>
 
-        <div className="bg-white border border-gray-200/80 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-3">
-          <span className="text-xs font-semibold text-slate-700">
+        <div className="bg-white/80 backdrop-blur-md border border-white/70 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-3">
+          <span className="text-xs font-semibold text-slate-800">
             Gemma AI is reasoning
           </span>
           <div className="flex items-center gap-1.5">
@@ -32,7 +33,10 @@ function ChatWindow({ messages, isLoading }) {
   }, [messages, isLoading]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 bg-gray-50/70">
+    <div
+      className="flex-1 overflow-y-auto px-4 md:px-6 py-6 bg-[url('/src/assets/chat-bg.png')] bg-cover bg-center bg-no-repeat relative"
+      style={{ backgroundImage: `url(${chatBg})` }}
+    >
       <div className="max-w-3xl mx-auto w-full">
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />

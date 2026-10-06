@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import landingBg from '../assets/landing-bg.png';
 
 const FAQ_QUESTIONS = [
   {
@@ -62,11 +63,15 @@ function WelcomeScreen({ onSendMessage }) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-8 md:py-12 bg-gray-50/70">
-      <div className="max-w-4xl mx-auto space-y-10">
+    <div
+      className="flex-1 overflow-y-auto px-6 py-8 md:py-12 bg-[url('/src/assets/landing-bg.png')] bg-cover bg-center bg-no-repeat relative"
+      style={{ backgroundImage: `url(${landingBg})` }}
+    >
+      {/* Glassmorphic Layer Overlay for perfect readability */}
+      <div className="max-w-4xl mx-auto space-y-10 bg-white/75 backdrop-blur-md rounded-3xl p-6 md:p-10 border border-white/60 shadow-xl">
         {/* Hero Section */}
         <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50/90 border border-blue-200 text-blue-700 text-xs font-semibold shadow-sm">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
             ScholarMind: Virtual Study Edition
           </div>
@@ -75,58 +80,58 @@ function WelcomeScreen({ onSendMessage }) {
             Level up your study game with <span className="text-blue-600">Gemma AI</span>.
           </h2>
 
-          <p className="text-base md:text-lg text-slate-600 max-w-2xl leading-relaxed">
+          <p className="text-base md:text-lg text-slate-700 max-w-2xl leading-relaxed">
             The intelligent study arena built for CSE students. Ask tricky questions, get simplified analogies, generate structured exam notes, and battle test with instant quizzes.
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => onSendMessage("Explain polymorphism in Java like I'm a beginner.")}
-              className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-medium text-sm rounded-full px-6 py-2.5 shadow-sm transition-all cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-medium text-sm rounded-full px-6 py-2.5 shadow-md transition-all cursor-pointer"
             >
               Start Instant Battle →
             </button>
-            <span className="text-xs text-slate-400 font-medium">Free • No sign up required</span>
+            <span className="text-xs text-slate-500 font-medium">Free • No sign up required</span>
           </div>
         </div>
 
-        {/* Feature Cards Grid (PromptWars Crisp White Cards) */}
+        {/* Feature Cards Grid (Glassmorphic Cards) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {STAT_CARDS.map((card, i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-white/80 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-2xl">{card.icon}</span>
-                <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                <span className="text-[11px] font-semibold text-blue-600 bg-blue-50/90 px-2 py-0.5 rounded-full border border-blue-100">
                   {card.tag}
                 </span>
               </div>
               <h3 className="font-bold text-slate-900 text-base mb-1">{card.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+              <p className="text-xs text-slate-600 leading-relaxed">{card.desc}</p>
             </div>
           ))}
         </div>
 
-        {/* FAQ Accordions Section (Clean Full-Width White Rows separated by thin borders) */}
+        {/* FAQ Accordions Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-slate-900">Battle Topics & FAQ</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 Click any topic row to view details or launch directly into the AI tutor arena.
               </p>
             </div>
-            <span className="text-xs font-semibold text-slate-400">5 Questions Ready</span>
+            <span className="text-xs font-semibold text-slate-500">5 Questions Ready</span>
           </div>
 
           {/* Full-width white accordion container */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm divide-y divide-gray-200 overflow-hidden">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/80 shadow-sm divide-y divide-gray-200/80 overflow-hidden">
             {FAQ_QUESTIONS.map((faq) => {
               const isExpanded = expandedId === faq.id;
               return (
-                <div key={faq.id} className="transition-colors hover:bg-gray-50/60">
+                <div key={faq.id} className="transition-colors hover:bg-white/60">
                   {/* Row Header */}
                   <div
                     onClick={() => toggleAccordion(faq.id)}
@@ -141,14 +146,14 @@ function WelcomeScreen({ onSendMessage }) {
                       </h4>
                     </div>
 
-                    {/* Dark circular chevron dropdown arrow icon centered on the right side */}
+                    {/* Dark circular chevron dropdown arrow icon */}
                     <div className="flex-shrink-0 flex items-center gap-3">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onSendMessage(faq.question);
                         }}
-                        className="hidden sm:inline-flex bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-1.5 rounded-full transition-colors cursor-pointer"
+                        className="hidden sm:inline-flex bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-1.5 rounded-full transition-colors cursor-pointer shadow-sm"
                       >
                         Ask Buddy
                       </button>
@@ -167,7 +172,7 @@ function WelcomeScreen({ onSendMessage }) {
 
                   {/* Expanded Accordion Body */}
                   {isExpanded && (
-                    <div className="px-5 pb-5 pt-1 bg-gray-50/50 text-xs md:text-sm text-slate-600 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="px-5 pb-5 pt-1 bg-white/60 text-xs md:text-sm text-slate-700 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <p className="leading-relaxed">{faq.preview}</p>
                       <button
                         onClick={() => onSendMessage(faq.question)}

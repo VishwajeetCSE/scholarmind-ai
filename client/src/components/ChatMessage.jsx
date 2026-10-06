@@ -75,8 +75,8 @@ function ChatMessage({ message }) {
               isUser
                 ? 'bg-blue-600 text-white rounded-tr-sm shadow-sm'
                 : message.isError
-                  ? 'bg-rose-50 border border-rose-200 text-rose-800 rounded-tl-sm shadow-sm'
-                  : 'bg-white border border-gray-200/80 shadow-sm text-slate-800 rounded-tl-sm'
+                  ? 'bg-rose-50/90 backdrop-blur-md border border-rose-200 text-rose-800 rounded-tl-sm shadow-sm'
+                  : 'bg-white/80 backdrop-blur-md border border-white/70 shadow-sm text-slate-800 rounded-tl-sm'
             }`}
           >
             {/* Attached File Preview (Image or Document) */}

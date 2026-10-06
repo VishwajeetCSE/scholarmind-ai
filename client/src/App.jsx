@@ -5,6 +5,8 @@ import WelcomeScreen from './components/WelcomeScreen';
 import ChatWindow from './components/ChatWindow';
 import ChatInput from './components/ChatInput';
 
+import chatBg from './assets/chat-bg.png';
+
 const API_URL = '/api/chat';
 
 function App() {
@@ -173,20 +175,25 @@ function App() {
           {activeTab === 'chat' && (
             <>
               {!hasMessages ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-50/70">
-                  <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-center justify-center text-3xl mb-4">
-                    🎓
+                <div
+                  className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[url('/src/assets/chat-bg.png')] bg-cover bg-center bg-no-repeat"
+                  style={{ backgroundImage: `url(${chatBg})` }}
+                >
+                  <div className="bg-white/80 backdrop-blur-md border border-white/70 rounded-3xl p-8 shadow-xl max-w-md mx-auto">
+                    <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-center justify-center text-3xl mb-4 mx-auto">
+                      🎓
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-1">ScholarMind Chat Arena</h3>
+                    <p className="text-sm text-slate-600 max-w-sm mb-6">
+                      Ask any question, paste an assignment, or click below to launch a sample battle.
+                    </p>
+                    <button
+                      onClick={() => sendMessage("Explain inheritance in Java like I'm a beginner.")}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs md:text-sm rounded-full px-6 py-2.5 shadow-md transition-all cursor-pointer"
+                    >
+                      Try: "Explain inheritance in Java" →
+                    </button>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-1">ScholarMind Chat Arena</h3>
-                  <p className="text-sm text-slate-500 max-w-sm mb-6">
-                    Ask any question, paste an assignment, or click below to launch a sample battle.
-                  </p>
-                  <button
-                    onClick={() => sendMessage("Explain inheritance in Java like I'm a beginner.")}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs md:text-sm rounded-full px-6 py-2.5 shadow-sm transition-all cursor-pointer"
-                  >
-                    Try: "Explain inheritance in Java" →
-                  </button>
                 </div>
               ) : (
                 <ChatWindow messages={messages} isLoading={isLoading} />
