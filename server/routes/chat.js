@@ -73,4 +73,41 @@ router.post('/image', upload.single('image'), async (req, res, next) => {
   }
 });
 
+/**
+ * GET /api/chat/debug
+ * Diagnostic endpoint to check API key presence and list models returned by Google.
+ */
+router.get('/debug', async (req, res) => {
+  const { getApiKey, discoverAvailableModels } = require('../services/gemmaService');
+  const key = getApiKey();
+
+  if (!key) {
+    return res.status(503).json({
+      status: 'error',
+      message: 'GEMINI_API_KEY environment variable is NOT set on Vercel.',
+      hint: 'Go to Vercel -> Project Settings -> Environment Variables and add GEMINI_API_KEY.',
+    });
+  }
+
+  const maskedKey = `${key.slice(0, 6)}...${key.slice(-4)} (length: ${key.length})`;
+
+  try {
+    const models = await discoverAvailableModels(key);
+    res.json({
+      status: 'ok',
+      apiKeyDetected: maskedKey,
+      availableModelsCount: models.length,
+      availableModels: models,
+      recommendation: models.length > 0 ? `Ready to use! Active model: ${models[0]}` : 'No models returned by Google for this key.',
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      apiKeyDetected: maskedKey,
+      googleApiError: err.message,
+      hint: 'Please check your API key in Google AI Studio to make sure it is active.',
+    });
+  }
+});
+
 module.exports = router;

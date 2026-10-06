@@ -25,64 +25,110 @@ Your rules:
 let genAI = null;
 let currentKey = null;
 let cachedWorkingModel = null;
+let dynamicallyDiscoveredModels = null;
+
+function getApiKey() {
+  return (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+}
 
 function getClient() {
-  const apiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+  const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not configured. Please set it in your environment variables.');
   }
   if (!genAI || currentKey !== apiKey) {
     genAI = new GoogleGenerativeAI(apiKey);
     currentKey = apiKey;
+    dynamicallyDiscoveredModels = null;
+    cachedWorkingModel = null;
   }
   return genAI;
 }
 
 /**
- * Returns an ordered list of candidate models to try.
- * If user set a custom valid model, try it first, followed by production Google AI models.
+ * Dynamically queries Google's REST API to discover which models this API key actually supports.
  */
-function getCandidateModels() {
-  const candidates = [];
-
-  // Check user-configured model (GEMINI_MODEL or GEMMA_MODEL)
-  const envModel = (process.env.GEMINI_MODEL || process.env.GEMMA_MODEL || '').trim().replace(/^["']|["']$/g, '');
-  if (
-    envModel &&
-    !envModel.includes('your_') &&
-    !envModel.toLowerCase().includes('gemma-3') &&
-    !envModel.toLowerCase().includes('gemma-4')
-  ) {
-    candidates.push(envModel);
+async function discoverAvailableModels(apiKey) {
+  if (dynamicallyDiscoveredModels && dynamicallyDiscoveredModels.length > 0) {
+    return dynamicallyDiscoveredModels;
   }
 
-  // Stable production models ordered by speed & availability
-  const defaults = [
-    'gemini-1.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-pro',
-    'gemini-2.5-flash',
-    'gemini-pro',
-  ];
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`
+    );
+    const data = await res.json();
 
-  for (const m of defaults) {
-    if (!candidates.includes(m)) {
-      candidates.push(m);
+    if (data.models && Array.isArray(data.models)) {
+      const valid = data.models
+        .filter(
+          (m) =>
+            m.supportedGenerationMethods &&
+            m.supportedGenerationMethods.includes('generateContent')
+        )
+        .map((m) => m.name.replace(/^models\//, ''));
+
+      if (valid.length > 0) {
+        // Sort: flash models first, then pro, newest first
+        valid.sort((a, b) => {
+          const aFlash = a.includes('flash') ? 0 : 1;
+          const bFlash = b.includes('flash') ? 0 : 1;
+          if (aFlash !== bFlash) return aFlash - bFlash;
+          return b.localeCompare(a);
+        });
+
+        console.log('[AI Study Buddy] Dynamically discovered models for key:', valid);
+        dynamicallyDiscoveredModels = valid;
+        return valid;
+      }
+    } else if (data.error) {
+      console.warn('[AI Study Buddy] Google API error during model discovery:', data.error.message);
+      if (
+        data.error.status === 'INVALID_ARGUMENT' ||
+        /key/i.test(data.error.message) ||
+        data.error.code === 400
+      ) {
+        throw new Error(`Google API Key error: ${data.error.message}`);
+      }
+    }
+  } catch (err) {
+    console.warn('[AI Study Buddy] Note during model discovery:', err.message);
+    if (err.message?.includes('Google API Key error')) {
+      throw err;
     }
   }
 
-  return candidates;
+  return [];
 }
 
 /**
- * Attempt a chat query with automatic model fallback.
+ * Returns ordered candidate models: dynamically discovered from Google first, then static fallbacks.
+ */
+async function getCandidateModels(apiKey) {
+  const dynamic = await discoverAvailableModels(apiKey);
+  if (dynamic.length > 0) {
+    return dynamic;
+  }
+
+  // Fallback defaults
+  return [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-pro',
+  ];
+}
+
+/**
+ * Attempt a chat query with automatic model discovery and fallback.
  */
 async function chat(history, userMessage) {
   const client = getClient();
+  const apiKey = getApiKey();
   const candidateModels = cachedWorkingModel
-    ? [cachedWorkingModel, ...getCandidateModels().filter((m) => m !== cachedWorkingModel)]
-    : getCandidateModels();
+    ? [cachedWorkingModel]
+    : await getCandidateModels(apiKey);
 
   let lastError = null;
 
@@ -90,9 +136,8 @@ async function chat(history, userMessage) {
     try {
       console.log(`[AI Study Buddy] Attempting model: ${modelName}`);
 
-      let model;
       try {
-        model = client.getGenerativeModel({
+        const model = client.getGenerativeModel({
           model: modelName,
           systemInstruction: SYSTEM_INSTRUCTION,
         });
@@ -103,9 +148,11 @@ async function chat(history, userMessage) {
         console.log(`[AI Study Buddy] Success with model: ${modelName}`);
         return reply;
       } catch (innerErr) {
-        // If systemInstruction isn't supported on older model variants, retry without it
-        if (innerErr.message?.includes('systemInstruction') || innerErr.message?.includes('INVALID_ARGUMENT')) {
-          model = client.getGenerativeModel({ model: modelName });
+        if (
+          innerErr.message?.includes('systemInstruction') ||
+          innerErr.message?.includes('INVALID_ARGUMENT')
+        ) {
+          const model = client.getGenerativeModel({ model: modelName });
           const augmentedHistory = [
             { role: 'user', parts: [{ text: `[System Instructions]:\n${SYSTEM_INSTRUCTION}` }] },
             { role: 'model', parts: [{ text: 'Understood. I will act as your AI Study Buddy tutor.' }] },
@@ -124,7 +171,6 @@ async function chat(history, userMessage) {
       console.warn(`[AI Study Buddy] Model '${modelName}' failed:`, err.message);
       lastError = err;
 
-      // Fast exit if it's an API key or quota error (switching model won't help)
       if (
         /api[ _-]?key/i.test(err.message) ||
         err.message?.includes('API_KEY_INVALID') ||
@@ -132,21 +178,21 @@ async function chat(history, userMessage) {
       ) {
         throw err;
       }
-      // Continue to next candidate model
     }
   }
 
-  throw lastError || new Error('No available AI model found.');
+  throw lastError || new Error('No available AI model found for this API key.');
 }
 
 /**
- * Attempt a multimodal query with automatic model fallback.
+ * Multimodal query with automatic model discovery and fallback.
  */
 async function chatWithImage(history, userMessage, imageData) {
   const client = getClient();
+  const apiKey = getApiKey();
   const candidateModels = cachedWorkingModel
-    ? [cachedWorkingModel, ...getCandidateModels().filter((m) => m !== cachedWorkingModel)]
-    : getCandidateModels();
+    ? [cachedWorkingModel]
+    : await getCandidateModels(apiKey);
 
   let lastError = null;
 
@@ -185,7 +231,7 @@ async function chatWithImage(history, userMessage, imageData) {
     }
   }
 
-  throw lastError || new Error('No available multimodal AI model found.');
+  throw lastError || new Error('No available multimodal AI model found for this API key.');
 }
 
-module.exports = { chat, chatWithImage };
+module.exports = { chat, chatWithImage, discoverAvailableModels, getApiKey };
