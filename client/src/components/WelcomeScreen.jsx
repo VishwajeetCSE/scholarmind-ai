@@ -68,7 +68,7 @@ function WelcomeScreen({ onSendMessage }) {
         <div className="space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-            PromptWars: Virtual Study Edition
+            ScholarMind: Virtual Study Edition
           </div>
 
           <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">

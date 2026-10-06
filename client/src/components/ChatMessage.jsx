@@ -39,7 +39,7 @@ function ChatMessage({ message }) {
           {!isUser && !message.isError && (
             <div className="flex items-center justify-between gap-2 mb-1.5 px-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-900 tracking-tight">PromptWars AI Tutor</span>
+                <span className="text-xs font-bold text-slate-900 tracking-tight">ScholarMind AI Tutor</span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
                   Gemma 3
                 </span>

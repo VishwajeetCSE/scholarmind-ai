@@ -38,7 +38,7 @@ function Sidebar({ activeTab, setActiveTab, onNewChat }) {
           onNewChat();
         }}
         className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-xl font-bold shadow-md hover:scale-105 transition-transform mb-8 cursor-pointer"
-        title="PromptWars Study Buddy"
+        title="ScholarMind Study Buddy"
       >
         🎓
       </button>

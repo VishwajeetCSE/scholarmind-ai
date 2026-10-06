@@ -6,7 +6,7 @@ function Header({ onNewChat, hasMessages, activeTab }) {
         <span className="bg-white/20 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
           Live
         </span>
-        <span>⚡ PROMPTWARS: VIRTUAL — Gemma 3 Study Arena • Hacktoberfest Edition</span>
+        <span>⚡ Gemma 3 Study Arena • Hacktoberfest Edition</span>
       </div>
 
       {/* 2. Clean White Header Bar */}
