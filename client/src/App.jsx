@@ -12,9 +12,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentTopic, setCurrentTopic] = useState('');
   const [recentTopics, setRecentTopics] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'chat' | 'history'
 
-  // Build history array in Gemini format from messages
   const buildHistory = (msgs) => {
     return msgs.map((m) => ({
       role: m.role === 'user' ? 'user' : 'model',
@@ -36,21 +35,20 @@ function App() {
 
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
+      setActiveTab('chat'); // Switch to Chat Arena immediately
 
       const topicText = text.trim() || 'Image question';
       setCurrentTopic(topicText);
 
-      // Track recent topics (up to 8, unique)
       setRecentTopics((prev) => {
         const filtered = prev.filter((t) => t.toLowerCase() !== topicText.toLowerCase());
-        return [topicText, ...filtered].slice(0, 8);
+        return [topicText, ...filtered].slice(0, 10);
       });
 
       try {
         let data;
 
         if (imageFile) {
-          // Multimodal request
           const formData = new FormData();
           formData.append('image', imageFile);
           formData.append('message', text.trim() || 'Explain this image.');
@@ -63,7 +61,6 @@ function App() {
           data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Failed to get AI response');
         } else {
-          // Text-only request
           const res = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -107,7 +104,7 @@ function App() {
       const prompts = {
         explain: `Explain "${topic}" in the simplest possible language, as if I'm a complete beginner. Use relatable analogies and clear examples.`,
         exam: `Give me a structured, exam-ready answer for "${topic}". Include: Definition, Core Concepts, Key Points, Real-World Example, Advantages/Disadvantages (if applicable), and Applications. Format it neatly with headings and markdown.`,
-        quiz: `Generate 3 high-quality multiple-choice questions (MCQs) about "${topic}". Each question must have 4 options (A, B, C, D). Do NOT reveal the answers or explanations yet — ask me to answer first!`,
+        quiz: `Generate 3 high-quality multiple-choice questions (MCQs) about "${topic}". Each question must have 4 options (A, B, C, D). Do NOT reveal the answers yet — wait for me to answer!`,
         example: `Give me a practical, real-world, or programming code example of "${topic}". Make it clear, modern, and well-explained with comments.`,
       };
 
@@ -121,55 +118,109 @@ function App() {
   const startNewChat = () => {
     setMessages([]);
     setCurrentTopic('');
-  };
-
-  const handleSelectRecentTopic = (topic) => {
-    sendMessage(topic);
+    setActiveTab('chat');
   };
 
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-screen bg-[#080c14] text-slate-100 overflow-hidden relative selection:bg-indigo-500/30 selection:text-indigo-200">
-      {/* Background Ambient Glows */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 right-1/4 w-[30rem] h-[30rem] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/3 right-10 w-72 h-72 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
-
-      {/* Collapsible Sidebar */}
+    <div className="flex h-screen bg-[#f8fafc] text-slate-800 overflow-hidden font-sans">
+      {/* 1. PromptWars Persistent Clean White Left Sidebar */}
       <Sidebar
-        isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         onNewChat={startNewChat}
-        recentTopics={recentTopics}
-        onSelectTopic={handleSelectRecentTopic}
-        currentTopic={currentTopic}
-        onStudyMode={sendStudyMode}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
+      {/* 2. Main Content Viewport */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#f8fafc]">
+        {/* Soft Pink Notice Banner & Clean White Header */}
         <Header
-          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onNewChat={startNewChat}
           hasMessages={hasMessages}
-          currentTopic={currentTopic}
+          activeTab={activeTab}
         />
 
+        {/* Tab Content Display */}
         <main className="flex-1 overflow-hidden flex flex-col relative">
-          {!hasMessages ? (
+          {activeTab === 'overview' && (
             <WelcomeScreen onSendMessage={sendMessage} />
-          ) : (
-            <ChatWindow messages={messages} isLoading={isLoading} />
           )}
 
-          <ChatInput
-            onSend={sendMessage}
-            onStudyMode={sendStudyMode}
-            isLoading={isLoading}
-            hasMessages={hasMessages}
-            currentTopic={currentTopic}
-          />
+          {activeTab === 'chat' && (
+            <>
+              {!hasMessages ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-50/70">
+                  <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-center justify-center text-3xl mb-4">
+                    🎓
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-1">ScholarMind Chat Arena</h3>
+                  <p className="text-sm text-slate-500 max-w-sm mb-6">
+                    Ask any question, paste an assignment, or click below to launch a sample battle.
+                  </p>
+                  <button
+                    onClick={() => sendMessage("Explain inheritance in Java like I'm a beginner.")}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs md:text-sm rounded-full px-6 py-2.5 shadow-sm transition-all cursor-pointer"
+                  >
+                    Try: "Explain inheritance in Java" →
+                  </button>
+                </div>
+              ) : (
+                <ChatWindow messages={messages} isLoading={isLoading} />
+              )}
+
+              <ChatInput
+                onSend={sendMessage}
+                onStudyMode={sendStudyMode}
+                isLoading={isLoading}
+                hasMessages={hasMessages}
+                currentTopic={currentTopic}
+              />
+            </>
+          )}
+
+          {activeTab === 'history' && (
+            <div className="flex-1 overflow-y-auto p-6 md:p-10 bg-gray-50/70">
+              <div className="max-w-3xl mx-auto space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Battle & Study History</h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Your queries and practice topics during this session.
+                  </p>
+                </div>
+
+                {recentTopics.length > 0 ? (
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm divide-y divide-gray-100 overflow-hidden">
+                    {recentTopics.map((topic, i) => (
+                      <div
+                        key={i}
+                        onClick={() => sendMessage(topic)}
+                        className="p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-base text-blue-600">💬</span>
+                          <span className="text-sm font-semibold text-slate-800">{topic}</span>
+                        </div>
+                        <button className="text-xs text-blue-600 font-semibold hover:underline">
+                          Re-open →
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
+                    <p className="text-sm text-slate-500">No battle history yet.</p>
+                    <button
+                      onClick={() => setActiveTab('overview')}
+                      className="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-full px-5 py-2 cursor-pointer"
+                    >
+                      Browse Topics →
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

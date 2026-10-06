@@ -1,125 +1,186 @@
-import FeatureCard from './FeatureCard';
+import { useState } from 'react';
 
-const EXAMPLE_PROMPTS = [
+const FAQ_QUESTIONS = [
   {
-    text: "Explain inheritance in Java like I'm a beginner.",
-    tag: "Java / OOP",
-    icon: "☕",
+    id: 1,
+    category: 'Object-Oriented Programming',
+    question: "Explain inheritance in Java like I'm a beginner.",
+    preview: 'Understand parent-child classes, code reuse, and the extends keyword with real-world car/vehicle analogies.',
   },
   {
-    text: "What is supervised learning?",
-    tag: "Machine Learning",
-    icon: "🤖",
+    id: 2,
+    category: 'Machine Learning & AI',
+    question: 'What is supervised learning?',
+    preview: 'Learn how models train on labeled data (input-output pairs) like a student studying with an answer key.',
   },
   {
-    text: "Explain Master-Detail relationship in Salesforce.",
-    tag: "Salesforce",
-    icon: "☁️",
+    id: 3,
+    category: 'Cloud & Salesforce',
+    question: 'Explain Master-Detail relationship in Salesforce.',
+    preview: 'Tightly coupled parent-child object relationship with cascade delete and roll-up summary fields.',
   },
   {
-    text: "Explain Agile methodology in simple language.",
-    tag: "Software Engineering",
-    icon: "⚡",
+    id: 4,
+    category: 'Software Engineering',
+    question: 'Explain Agile methodology in simple language.',
+    preview: 'Iterative software development approach delivering working software in short 2-week sprints with constant feedback.',
   },
   {
-    text: "Give me 3 MCQs about machine learning.",
-    tag: "Quiz Practice",
-    icon: "🎯",
+    id: 5,
+    category: 'Self-Testing & Exam Prep',
+    question: 'Give me 3 MCQs about machine learning.',
+    preview: 'Generate interactive multiple-choice questions with 4 options to test your conceptual clarity.',
   },
 ];
 
-const FEATURES = [
+const STAT_CARDS = [
   {
-    emoji: '💡',
-    title: 'Explain Simply',
-    description: 'Complex technical concepts broken down into beginner-friendly analogies.',
-    badge: 'Beginner Friendly',
+    title: 'Gemma 3.x AI Engine',
+    desc: 'Google open weights model trained for precision technical explanations',
+    tag: 'Trained Model',
+    icon: '⚡',
   },
   {
-    emoji: '📝',
-    title: 'Exam-Ready Answers',
-    description: 'Structured answers complete with definitions, points, examples, and trade-offs.',
-    badge: 'Exam Mode',
+    title: 'Exam-Ready Structure',
+    desc: 'Structured answers with definitions, key points, code, and trade-offs',
+    tag: 'Exam Mode',
+    icon: '📝',
   },
   {
-    emoji: '🧠',
-    title: 'Interactive Quizzes',
-    description: 'Test your understanding with topic-based MCQs before exams.',
-    badge: 'Self-Test',
-  },
-  {
-    emoji: '💻',
-    title: 'Code & Diagrams',
-    description: 'Practical code snippets and visual markdown tables for hands-on learning.',
-    badge: 'Developer',
+    title: 'Multimodal Vision',
+    desc: 'Upload diagrams, textbook pages, and notes for instant clarification',
+    tag: 'Vision AI',
+    icon: '📷',
   },
 ];
 
 function WelcomeScreen({ onSendMessage }) {
+  const [expandedId, setExpandedId] = useState(null);
+
+  const toggleAccordion = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-8 md:py-12">
-      {/* Hero Header */}
-      <div className="text-center max-w-2xl mx-auto mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-5 shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          Powered by Gemma & Google Gemini AI
-        </div>
+    <div className="flex-1 overflow-y-auto px-6 py-8 md:py-12 bg-gray-50/70">
+      <div className="max-w-4xl mx-auto space-y-10">
+        {/* Hero Section */}
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+            PromptWars: Virtual Study Edition
+          </div>
 
-        <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white mb-4 leading-tight">
-          Ask anything.{' '}
-          <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-cyan-300 bg-clip-text text-transparent">
-            Learn simply.
-          </span>{' '}
-          Study smarter.
-        </h2>
+          <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            Level up your study game with <span className="text-blue-600">Gemma AI</span>.
+          </h2>
 
-        <p className="text-sm md:text-base text-slate-400 leading-relaxed max-w-xl mx-auto">
-          Your personal 24/7 AI tutor for understanding difficult computer science concepts, preparing structured exam answers, and practicing quizzes.
-        </p>
-      </div>
-
-      {/* Feature Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 max-w-4xl mx-auto mb-10">
-        {FEATURES.map((f) => (
-          <FeatureCard key={f.title} {...f} />
-        ))}
-      </div>
-
-      {/* Example Prompt Starters */}
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-3 px-1">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span>✨</span> Recommended Study Prompts
+          <p className="text-base md:text-lg text-slate-600 max-w-2xl leading-relaxed">
+            The intelligent study arena built for CSE students. Ask tricky questions, get simplified analogies, generate structured exam notes, and battle test with instant quizzes.
           </p>
-          <span className="text-[11px] text-slate-500">Click to start instant session</span>
+
+          <div className="pt-2 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => onSendMessage("Explain polymorphism in Java like I'm a beginner.")}
+              className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-medium text-sm rounded-full px-6 py-2.5 shadow-sm transition-all cursor-pointer"
+            >
+              Start Instant Battle →
+            </button>
+            <span className="text-xs text-slate-400 font-medium">Free • No sign up required</span>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          {EXAMPLE_PROMPTS.map((prompt) => (
-            <button
-              key={prompt.text}
-              onClick={() => onSendMessage(prompt.text)}
-              className="group text-left px-4 py-3 rounded-xl bg-slate-900/60 backdrop-blur-xl border border-white/[0.06]
-                         hover:border-indigo-500/40 hover:bg-slate-900/90 transition-all duration-200
-                         hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(99,102,241,0.12)] cursor-pointer flex items-center justify-between gap-3"
+        {/* Feature Cards Grid (PromptWars Crisp White Cards) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {STAT_CARDS.map((card, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="text-lg flex-shrink-0">{prompt.icon}</span>
-                <span className="text-xs md:text-sm text-slate-200 group-hover:text-white transition-colors truncate">
-                  {prompt.text}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-2xl">{card.icon}</span>
+                <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                  {card.tag}
                 </span>
               </div>
-
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-white/[0.04] text-slate-400 border border-white/[0.04] hidden sm:inline">
-                  {prompt.tag}
-                </span>
-                <span className="text-indigo-400 group-hover:translate-x-1 transition-transform duration-200 text-sm">
-                  →
-                </span>
-              </div>
-            </button>
+              <h3 className="font-bold text-slate-900 text-base mb-1">{card.title}</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+            </div>
           ))}
+        </div>
+
+        {/* FAQ Accordions Section (Clean Full-Width White Rows separated by thin borders) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Battle Topics & FAQ</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Click any topic row to view details or launch directly into the AI tutor arena.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-slate-400">5 Questions Ready</span>
+          </div>
+
+          {/* Full-width white accordion container */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm divide-y divide-gray-200 overflow-hidden">
+            {FAQ_QUESTIONS.map((faq) => {
+              const isExpanded = expandedId === faq.id;
+              return (
+                <div key={faq.id} className="transition-colors hover:bg-gray-50/60">
+                  {/* Row Header */}
+                  <div
+                    onClick={() => toggleAccordion(faq.id)}
+                    className="p-5 flex items-center justify-between gap-4 cursor-pointer select-none"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider block mb-1">
+                        {faq.category}
+                      </span>
+                      <h4 className="text-sm md:text-base font-bold text-slate-900 truncate">
+                        {faq.question}
+                      </h4>
+                    </div>
+
+                    {/* Dark circular chevron dropdown arrow icon centered on the right side */}
+                    <div className="flex-shrink-0 flex items-center gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSendMessage(faq.question);
+                        }}
+                        className="hidden sm:inline-flex bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-1.5 rounded-full transition-colors cursor-pointer"
+                      >
+                        Ask Buddy
+                      </button>
+
+                      <div
+                        className={`w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center transition-transform duration-200 ${
+                          isExpanded ? 'rotate-180 bg-blue-600' : ''
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded Accordion Body */}
+                  {isExpanded && (
+                    <div className="px-5 pb-5 pt-1 bg-gray-50/50 text-xs md:text-sm text-slate-600 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <p className="leading-relaxed">{faq.preview}</p>
+                      <button
+                        onClick={() => onSendMessage(faq.question)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-full px-5 py-2 shadow-sm transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer"
+                      >
+                        Launch Question →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
