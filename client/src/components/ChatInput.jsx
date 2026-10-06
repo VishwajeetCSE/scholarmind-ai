@@ -9,19 +9,18 @@ const STUDY_MODES = [
 
 function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }) {
   const [text, setText] = useState('');
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [attachedFile, setAttachedFile] = useState(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (isLoading) return;
-    if (!text.trim() && !imageFile) return;
+    if (!text.trim() && !attachedFile) return;
 
-    onSend(text, imageFile);
+    onSend(text, attachedFile);
     setText('');
-    clearImage();
+    clearFile();
     if (textareaRef.current) {
       textareaRef.current.style.height = '42px';
     }
@@ -34,17 +33,33 @@ function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }
     }
   };
 
-  const handleImageSelect = (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
+    if (!file) return;
+
+    const isImage = file.type.startsWith('image/');
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      // Extract base64 payload from data URL (data:mime;base64,DATA)
+      const dataUrl = reader.result;
+      const base64Data = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+
+      setAttachedFile({
+        name: file.name,
+        size: (file.size / 1024).toFixed(1) + ' KB',
+        mimeType: file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'text/plain'),
+        data: base64Data,
+        previewUrl: isImage ? dataUrl : null,
+        isImage,
+      });
+    };
+
+    reader.readAsDataURL(file);
   };
 
-  const clearImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
+  const clearFile = () => {
+    setAttachedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -55,7 +70,7 @@ function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }
     if (topicToUse) {
       onStudyMode(modeKey, topicToUse);
       setText('');
-      clearImage();
+      clearFile();
     }
   };
 
@@ -64,7 +79,7 @@ function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }
   return (
     <div className="sticky bottom-0 z-20 px-4 md:px-6 pb-5 pt-3 bg-gradient-to-t from-gray-50 via-gray-50/95 to-transparent">
       <div className="max-w-3xl mx-auto w-full">
-        {/* Quick Action Helpers (Interactive Pills that elevate slightly on hover) */}
+        {/* Quick Action Helpers */}
         {showModes && (
           <div className="flex flex-wrap items-center gap-2 mb-3 px-1">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden sm:inline mr-1">
@@ -88,14 +103,31 @@ function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }
           </div>
         )}
 
-        {/* Image Attachment Preview */}
-        {imagePreview && (
-          <div className="mb-2 relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-gray-200 shadow-sm">
-            <img src={imagePreview} alt="Upload preview" className="w-6 h-6 rounded-full object-cover" />
-            <span className="text-xs text-slate-700 font-medium truncate max-w-xs">{imageFile?.name || 'Image'}</span>
+        {/* Floating Preview Thumbnail / Chip for Attached Image or Document */}
+        {attachedFile && (
+          <div className="mb-2 relative inline-flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white border border-gray-300 shadow-md animate-fadeIn">
+            {attachedFile.isImage ? (
+              <img
+                src={attachedFile.previewUrl}
+                alt="Upload preview"
+                className="w-8 h-8 rounded-lg object-cover border border-gray-200 flex-shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                {attachedFile.name.endsWith('.pdf') ? 'PDF' : 'DOC'}
+              </div>
+            )}
+
+            <div className="min-w-0 pr-1">
+              <p className="text-xs font-semibold text-slate-800 truncate max-w-xs">{attachedFile.name}</p>
+              <p className="text-[10px] text-slate-400">{attachedFile.size} • Ready for analysis</p>
+            </div>
+
             <button
-              onClick={clearImage}
-              className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 text-slate-600 flex items-center justify-center text-[10px] cursor-pointer"
+              type="button"
+              onClick={clearFile}
+              className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs transition-colors cursor-pointer ml-1"
+              title="Remove attached file"
             >
               ✕
             </button>
@@ -109,13 +141,13 @@ function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }
                      shadow-sm hover:shadow-md focus-within:border-blue-600 focus-within:ring-4 
                      focus-within:ring-blue-100 transition-all duration-200"
         >
-          {/* File Input */}
+          {/* File Input Supporting Images, PDFs, and Text docs */}
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,.pdf,.txt,.md"
             className="hidden"
-            onChange={handleImageSelect}
+            onChange={handleFileSelect}
           />
 
           {/* Floating Upload Icon Inside Pill */}
@@ -123,11 +155,15 @@ function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors cursor-pointer disabled:opacity-40"
-            title="Upload image / diagram"
+            className={`p-2 rounded-full transition-colors cursor-pointer disabled:opacity-40 ${
+              attachedFile
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+            }`}
+            title="Attach image (diagram, notes) or document (PDF, TXT)"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
             </svg>
           </button>
 
@@ -138,9 +174,11 @@ function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              currentTopic
+              attachedFile
+                ? `Ask a question about ${attachedFile.name} (or leave blank to summarize)...`
+                : currentTopic
                 ? `Ask follow-up on "${currentTopic}" or select a mode...`
-                : 'Ask your study question or paste code here...'
+                : 'Ask your study question, paste code, or attach notes/PDF...'
             }
             rows={1}
             disabled={isLoading}
@@ -155,7 +193,7 @@ function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }
           {/* Royal Blue Primary Send Button */}
           <button
             type="submit"
-            disabled={isLoading || (!text.trim() && !imageFile)}
+            disabled={isLoading || (!text.trim() && !attachedFile)}
             className="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
             title="Send query"
           >
@@ -173,7 +211,7 @@ function ChatInput({ onSend, onStudyMode, isLoading, hasMessages, currentTopic }
         </form>
 
         <p className="text-[11px] text-gray-400 text-center mt-2">
-          Press <span className="font-semibold text-slate-600">Enter</span> to send, <span className="font-semibold text-slate-600">Shift + Enter</span> for new line
+          Supports <span className="font-semibold text-slate-600">Images, PDFs & TXT</span> • Press <span className="font-semibold text-slate-600">Enter</span> to send
         </p>
       </div>
     </div>

@@ -1,37 +1,54 @@
 const express = require('express');
 const multer = require('multer');
-const { chat, chatWithImage } = require('../services/gemmaService');
+const { chat, chatWithFile } = require('../services/gemmaService');
 
 const router = express.Router();
 
-// Multer for image uploads (memory storage, max 5 MB)
+// Multer for file uploads (memory storage, max 10 MB)
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (allowed.includes(file.mimetype)) {
+    const allowed = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/bmp',
+      'application/pdf',
+      'text/plain',
+      'text/markdown',
+      'text/csv',
+    ];
+    if (allowed.includes(file.mimetype) || file.originalname.match(/\.(pdf|txt|md|csv|png|jpg|jpeg|webp)$/i)) {
       cb(null, true);
     } else {
-      cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed.'));
+      cb(new Error('Supported file types: Images (PNG, JPG, WEBP, GIF) and Documents (PDF, TXT, MD).'));
     }
   },
 });
 
 /**
  * POST /api/chat
- * Body: { message: string, history: Array }
+ * Body: { message: string, history: Array, file?: { data: string, mimeType: string, name?: string } }
  */
 router.post('/', async (req, res, next) => {
   try {
-    const { message, history } = req.body;
+    const { message, history, file, image } = req.body;
+    const attachedFile = file || image;
+
+    // If an image or document is attached via JSON body
+    if (attachedFile && attachedFile.data) {
+      const reply = await chatWithFile(history || [], message || '', attachedFile);
+      return res.json({ reply });
+    }
 
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return res.status(400).json({ error: 'Message is required and must be a non-empty string.' });
     }
 
-    if (message.length > 10000) {
-      return res.status(400).json({ error: 'Message is too long. Please keep it under 10,000 characters.' });
+    if (message.length > 25000) {
+      return res.status(400).json({ error: 'Message is too long. Please keep it under 25,000 characters.' });
     }
 
     const reply = await chat(history || [], message.trim());
@@ -42,16 +59,16 @@ router.post('/', async (req, res, next) => {
 });
 
 /**
- * POST /api/chat/image
- * Multipart: image file + message (text field) + history (JSON string field)
+ * POST /api/chat/file and POST /api/chat/image
+ * Multipart upload for documents and images
  */
-router.post('/image', upload.single('image'), async (req, res, next) => {
+const handleMultipartUpload = async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'An image file is required.' });
+      return res.status(400).json({ error: 'A file (image or document) is required.' });
     }
 
-    const message = req.body.message || 'Explain this image.';
+    const message = req.body.message || '';
     let history = [];
     if (req.body.history) {
       try {
@@ -61,17 +78,21 @@ router.post('/image', upload.single('image'), async (req, res, next) => {
       }
     }
 
-    const imageData = {
-      mimeType: req.file.mimetype,
+    const fileData = {
+      mimeType: req.file.mimetype || 'application/pdf',
       data: req.file.buffer.toString('base64'),
+      name: req.file.originalname,
     };
 
-    const reply = await chatWithImage(history, message, imageData);
+    const reply = await chatWithFile(history, message, fileData);
     res.json({ reply });
   } catch (err) {
     next(err);
   }
-});
+};
+
+router.post('/file', upload.single('file'), handleMultipartUpload);
+router.post('/image', upload.single('image'), handleMultipartUpload);
 
 /**
  * GET /api/chat/debug

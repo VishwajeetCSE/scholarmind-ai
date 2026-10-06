@@ -185,9 +185,12 @@ async function chat(history, userMessage) {
 }
 
 /**
- * Multimodal query with automatic model discovery and fallback.
+ * Process multimodal requests (images, PDF, TXT) using Google Gen AI SDK inlineData.
+ * @param {Array} history
+ * @param {string} userMessage
+ * @param {Object} fileData { mimeType: string, data: string (base64), name?: string }
  */
-async function chatWithImage(history, userMessage, imageData) {
+async function chatWithFile(history, userMessage, fileData) {
   const client = getClient();
   const apiKey = getApiKey();
   const candidateModels = cachedWorkingModel
@@ -196,29 +199,38 @@ async function chatWithImage(history, userMessage, imageData) {
 
   let lastError = null;
 
+  // Clean raw base64 string
+  const base64Data = (fileData.data || '').replace(/^data:[^;]+;base64,/, '').trim();
+  const mimeType = fileData.mimeType || 'application/pdf';
+
   for (const modelName of candidateModels) {
     try {
-      console.log(`[AI Study Buddy] Attempting multimodal model: ${modelName}`);
+      console.log(`[AI Study Buddy] Attempting model for file (${mimeType}): ${modelName}`);
       const model = client.getGenerativeModel({
         model: modelName,
         systemInstruction: SYSTEM_INSTRUCTION,
       });
 
       const chatSession = model.startChat({ history: history || [] });
-      const imagePart = {
+      const filePart = {
         inlineData: {
-          mimeType: imageData.mimeType,
-          data: imageData.data,
+          data: base64Data,
+          mimeType: mimeType,
         },
       };
 
-      const result = await chatSession.sendMessage([userMessage || 'Explain this image.', imagePart]);
+      const promptText =
+        userMessage && userMessage.trim().length > 0
+          ? userMessage.trim()
+          : 'Please carefully read, analyze, and explain this study document / image in simple, beginner-friendly terms.';
+
+      const result = await chatSession.sendMessage([promptText, filePart]);
       const reply = result.response.text();
       cachedWorkingModel = modelName;
-      console.log(`[AI Study Buddy] Multimodal success with model: ${modelName}`);
+      console.log(`[AI Study Buddy] File processing success with model: ${modelName}`);
       return reply;
     } catch (err) {
-      console.warn(`[AI Study Buddy] Multimodal model '${modelName}' failed:`, err.message);
+      console.warn(`[AI Study Buddy] Model '${modelName}' failed for file:`, err.message);
       lastError = err;
 
       if (
@@ -231,7 +243,13 @@ async function chatWithImage(history, userMessage, imageData) {
     }
   }
 
-  throw lastError || new Error('No available multimodal AI model found for this API key.');
+  throw lastError || new Error('No available AI model found to process this document/image.');
 }
 
-module.exports = { chat, chatWithImage, discoverAvailableModels, getApiKey };
+module.exports = {
+  chat,
+  chatWithFile,
+  chatWithImage: chatWithFile,
+  discoverAvailableModels,
+  getApiKey,
+};

@@ -22,22 +22,59 @@ function App() {
   };
 
   const sendMessage = useCallback(
-    async (text, imageFile = null) => {
-      if (!text.trim() && !imageFile) return;
+    async (text, attachedFile = null) => {
+      if (!text?.trim() && !attachedFile) return;
+
+      let filePayload = null;
+      let displayFile = null;
+
+      if (attachedFile) {
+        if (attachedFile.data) {
+          filePayload = {
+            data: attachedFile.data,
+            mimeType: attachedFile.mimeType,
+            name: attachedFile.name,
+          };
+          displayFile = {
+            name: attachedFile.name,
+            mimeType: attachedFile.mimeType,
+            isImage: attachedFile.isImage,
+            previewUrl: attachedFile.previewUrl,
+          };
+        } else if (attachedFile instanceof File) {
+          const isImage = attachedFile.type.startsWith('image/');
+          const base64Data = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(attachedFile);
+          });
+          filePayload = {
+            data: base64Data,
+            mimeType: attachedFile.type,
+            name: attachedFile.name,
+          };
+          displayFile = {
+            name: attachedFile.name,
+            mimeType: attachedFile.type,
+            isImage,
+            previewUrl: isImage ? URL.createObjectURL(attachedFile) : null,
+          };
+        }
+      }
 
       const userMsg = {
         id: Date.now(),
         role: 'user',
-        text: text.trim(),
+        text: text?.trim() || '',
         timestamp: new Date(),
-        image: imageFile ? URL.createObjectURL(imageFile) : null,
+        file: displayFile,
       };
 
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
       setActiveTab('chat'); // Switch to Chat Arena immediately
 
-      const topicText = text.trim() || 'Image question';
+      const topicText = text?.trim() || (displayFile ? `Analysis of ${displayFile.name}` : 'Document study');
       setCurrentTopic(topicText);
 
       setRecentTopics((prev) => {
@@ -46,32 +83,18 @@ function App() {
       });
 
       try {
-        let data;
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text?.trim() || '',
+            history: buildHistory([...messages]),
+            file: filePayload,
+          }),
+        });
 
-        if (imageFile) {
-          const formData = new FormData();
-          formData.append('image', imageFile);
-          formData.append('message', text.trim() || 'Explain this image.');
-          formData.append('history', JSON.stringify(buildHistory([...messages])));
-
-          const res = await fetch(`${API_URL}/image`, {
-            method: 'POST',
-            body: formData,
-          });
-          data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Failed to get AI response');
-        } else {
-          const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: text.trim(),
-              history: buildHistory([...messages]),
-            }),
-          });
-          data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Failed to get AI response');
-        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to get AI response');
 
         const aiMsg = {
           id: Date.now() + 1,

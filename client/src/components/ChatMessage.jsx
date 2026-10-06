@@ -79,8 +79,33 @@ function ChatMessage({ message }) {
                   : 'bg-white border border-gray-200/80 shadow-sm text-slate-800 rounded-tl-sm'
             }`}
           >
-            {/* Attached Image Preview */}
-            {message.image && (
+            {/* Attached File Preview (Image or Document) */}
+            {message.file && (
+              <div className="mb-3">
+                {message.file.isImage && message.file.previewUrl ? (
+                  <div className="overflow-hidden rounded-xl border border-gray-200 max-w-sm shadow-sm">
+                    <img
+                      src={message.file.previewUrl}
+                      alt={message.file.name || 'Uploaded study question'}
+                      className="w-full object-cover max-h-60"
+                    />
+                  </div>
+                ) : (
+                  <div className={`inline-flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold ${
+                    isUser
+                      ? 'bg-white/15 text-white border border-white/20'
+                      : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  }`}>
+                    <span className="text-base">📄</span>
+                    <span className="truncate max-w-xs">{message.file.name || 'Attached Document'}</span>
+                    <span className="text-[10px] opacity-75 uppercase px-1.5 py-0.5 rounded bg-black/10">
+                      {message.file.mimeType?.split('/')[1] || 'DOC'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            {message.image && !message.file && (
               <div className="mb-3 overflow-hidden rounded-xl border border-gray-200 max-w-sm">
                 <img
                   src={message.image}
